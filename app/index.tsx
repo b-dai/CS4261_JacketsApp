@@ -1,27 +1,15 @@
-import React, { useState } from 'react'
+import React, { useState, createContext, useContext } from 'react'
 import { RouteProp } from '@react-navigation/native'
 import { createStackNavigator, StackScreenProps } from '@react-navigation/stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { StyleSheet, View, Text, TextInput, Button, FlatList, TouchableOpacity, SafeAreaView } from 'react-native'
 
-const dummyPosts = [
-  {
-    id: '1',
-    user: { id: 'u1', name: 'Alice' },
-    content: 'Loving the weather today!',
-    comments: [
-      { id: 'c1', user: { id: 'u2', name: 'Bob' }, text: 'Absolutely beautiful!' },
-      { id: 'c2', user: { id: 'u3', name: 'Charlie' }, text: 'Enjoy!' }
-    ]
-  },
-  {
-    id: '2',
-    user: { id: 'u2', name: 'Bob' },
-    content: 'Just had a great cup of coffee.',
-    comments: [
-      { id: 'c3', user: { id: 'u1', name: 'Alice' }, text: 'I need one too!' }
-    ]
-  }
+type Comment = { id: string; user: { id: string; name: string }; text: string }
+type Post = { id: string; user: { id: string; name: string }; content: string; comments: Comment[]; likes: number; dislikes: number }
+
+const initialPosts: Post[] = [
+  { id: '1', user: { id: 'u1', name: 'Alice' }, content: 'Loving the weather today!', comments: [ { id: 'c1', user: { id: 'u2', name: 'Bob' }, text: 'Absolutely beautiful!' }, { id: 'c2', user: { id: 'u3', name: 'Charlie' }, text: 'Enjoy!' } ], likes: 0, dislikes: 0 },
+  { id: '2', user: { id: 'u2', name: 'Bob' }, content: 'Just had a great cup of coffee.', comments: [ { id: 'c3', user: { id: 'u1', name: 'Alice' }, text: 'I need one too!' } ], likes: 0, dislikes: 0 }
 ]
 
 const dummyFriends = [
@@ -30,13 +18,16 @@ const dummyFriends = [
   { id: 'u3', name: 'Charlie' }
 ]
 
+type PostsContextType = { posts: Post[]; setPosts: React.Dispatch<React.SetStateAction<Post[]>> }
+const PostsContext = createContext<PostsContextType>({ posts: [], setPosts: () => {} })
+
 type RootStackParamList = {
   Login: undefined
   Home: undefined
-  Comments: { post: typeof dummyPosts[0] }
+  Comments: { post: Post }
   Profile: { user?: { id: string; name: string }; current?: boolean }
+  CreatePost: undefined
 }
-
 type TabParamList = {
   Feed: undefined
   Friends: undefined
@@ -59,31 +50,62 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
 }
 
 const FeedScreen = ({ navigation }: { navigation: any }) => {
-  const renderPost = ({ item }: { item: typeof dummyPosts[0] }) => (
+  const { posts, setPosts } = useContext(PostsContext)
+  const handleLike = (id: string) => {
+    setPosts(prev => prev.map(p => p.id === id ? { ...p, likes: p.likes + 1 } : p))
+  }
+  const handleDislike = (id: string) => {
+    setPosts(prev => prev.map(p => p.id === id ? { ...p, dislikes: p.dislikes + 1 } : p))
+  }
+  const renderPost = ({ item }: { item: Post }) => (
     <View style={styles.postContainer}>
       <TouchableOpacity onPress={() => navigation.navigate('Profile', { user: item.user, current: false })}>
         <Text style={styles.postUser}>{item.user.name}</Text>
       </TouchableOpacity>
       <Text style={styles.postContent}>{item.content}</Text>
+      <View style={{ flexDirection: 'row', marginBottom: 8 }}>
+        <Button title={`Like (${item.likes})`} onPress={() => handleLike(item.id)} />
+        <Button title={`Dislike (${item.dislikes})`} onPress={() => handleDislike(item.id)} />
+      </View>
       <Button title={`View Comments (${item.comments.length})`} onPress={() => navigation.navigate('Comments', { post: item })} />
     </View>
   )
   return (
     <SafeAreaView style={styles.container}>
-      <FlatList data={dummyPosts} keyExtractor={(item) => item.id} renderItem={renderPost} contentContainerStyle={{ padding: 10 }} />
+      <Button title="Create New Post" onPress={() => navigation.navigate('CreatePost')} />
+      <FlatList data={posts} keyExtractor={item => item.id} renderItem={renderPost} contentContainerStyle={{ padding: 10 }} />
+    </SafeAreaView>
+  )
+}
+
+type CreatePostScreenProps = StackScreenProps<RootStackParamList, 'CreatePost'>
+const CreatePostScreen = ({ navigation }: CreatePostScreenProps) => {
+  const { posts, setPosts } = useContext(PostsContext)
+  const [content, setContent] = useState('')
+  const handleCreate = () => {
+    const newPost: Post = { id: (posts.length + 1).toString(), user: { id: 'current', name: 'You' }, content, comments: [], likes: 0, dislikes: 0 }
+    setPosts([newPost, ...posts])
+    navigation.goBack()
+  }
+  return (
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.title}>Create New Post</Text>
+      <TextInput placeholder="What's on your mind?" style={styles.input} value={content} onChangeText={setContent} />
+      <Button title="Post" onPress={handleCreate} />
     </SafeAreaView>
   )
 }
 
 type CommentsScreenProps = StackScreenProps<RootStackParamList, 'Comments'>
-const CommentsScreen = ({ route }: CommentsScreenProps) => {
+const CommentsScreen = ({ route, navigation }: CommentsScreenProps) => {
   const { post } = route.params
   const [commentText, setCommentText] = useState('')
   const handleAddComment = () => { alert(`Comment added: ${commentText}`); setCommentText('') }
   return (
     <SafeAreaView style={styles.container}>
+      <Button title="Back" onPress={() => navigation.goBack()} />
       <Text style={styles.title}>Comments for: {post.content}</Text>
-      <FlatList data={post.comments} keyExtractor={(item) => item.id} renderItem={({ item }) => (
+      <FlatList data={post.comments} keyExtractor={item => item.id} renderItem={({ item }) => (
         <View style={styles.commentContainer}>
           <Text style={styles.commentUser}>{item.user.name}:</Text>
           <Text style={styles.commentText}>{item.text}</Text>
@@ -96,7 +118,7 @@ const CommentsScreen = ({ route }: CommentsScreenProps) => {
 }
 
 const FriendsScreen = ({ navigation }: { navigation: any }) => {
-  const renderFriend = ({ item }: { item: typeof dummyFriends[0] }) => (
+  const renderFriend = ({ item }: { item: { id: string; name: string } }) => (
     <TouchableOpacity style={styles.friendItem} onPress={() => navigation.navigate('Profile', { user: item, current: false })}>
       <Text style={styles.friendName}>{item.name}</Text>
     </TouchableOpacity>
@@ -104,14 +126,12 @@ const FriendsScreen = ({ navigation }: { navigation: any }) => {
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Your Friends</Text>
-      <FlatList data={dummyFriends} keyExtractor={(item) => item.id} renderItem={renderFriend} contentContainerStyle={{ padding: 10 }} />
+      <FlatList data={dummyFriends} keyExtractor={item => item.id} renderItem={renderFriend} contentContainerStyle={{ padding: 10 }} />
     </SafeAreaView>
   )
 }
 
-type ProfileScreenRouteProp =
-  | RouteProp<RootStackParamList, 'Profile'>
-  | RouteProp<TabParamList, 'Profile'>
+type ProfileScreenRouteProp = RouteProp<RootStackParamList, 'Profile'> | RouteProp<TabParamList, 'Profile'>
 type ProfileScreenProps = { route: ProfileScreenRouteProp; navigation: any }
 const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const params = route.params as { user?: { id: string; name: string }; current?: boolean }
@@ -139,7 +159,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
 
 const Tab = createBottomTabNavigator<TabParamList>()
 const HomeTabs = () => (
-  <Tab.Navigator>
+  <Tab.Navigator screenOptions={{ headerShown: false }}>
     <Tab.Screen name="Feed" component={FeedScreen} />
     <Tab.Screen name="Friends" component={FriendsScreen} />
     <Tab.Screen name="Profile" component={ProfileScreen} initialParams={{ current: true }} />
@@ -148,15 +168,23 @@ const HomeTabs = () => (
 
 const Stack = createStackNavigator<RootStackParamList>()
 const AppNavigator = () => (
-  <Stack.Navigator initialRouteName="Login">
-    <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-    <Stack.Screen name="Home" component={HomeTabs} options={{ headerShown: false }} />
+  <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="Login" component={LoginScreen} />
+    <Stack.Screen name="Home" component={HomeTabs} />
     <Stack.Screen name="Comments" component={CommentsScreen} />
     <Stack.Screen name="Profile" component={ProfileScreen} />
+    <Stack.Screen name="CreatePost" component={CreatePostScreen} />
   </Stack.Navigator>
 )
 
-export default AppNavigator
+export default function App() {
+  const [posts, setPosts] = useState<Post[]>(initialPosts)
+  return (
+    <PostsContext.Provider value={{ posts, setPosts }}>
+      <AppNavigator />
+    </PostsContext.Provider>
+  )
+}
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: '#fff' },
