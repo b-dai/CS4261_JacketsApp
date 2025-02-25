@@ -2,14 +2,20 @@ import React, { useState, createContext, useContext } from 'react'
 import { RouteProp } from '@react-navigation/native'
 import { createStackNavigator, StackScreenProps } from '@react-navigation/stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { StyleSheet, View, Text, TextInput, Button, FlatList, TouchableOpacity, SafeAreaView } from 'react-native'
+import { StyleSheet, View, Text, TextInput, Button, FlatList, TouchableOpacity, SafeAreaView, Animated, PanResponder } from 'react-native'
 
 type Comment = { id: string; user: { id: string; name: string }; text: string }
 type Post = { id: string; user: { id: string; name: string }; content: string; comments: Comment[]; likes: number; dislikes: number }
+type BulletinPost = { id: string; title: string; content: string; category: string; x: number; y: number }
 
 const initialPosts: Post[] = [
   { id: '1', user: { id: 'u1', name: 'Alice' }, content: 'Loving the weather today!', comments: [ { id: 'c1', user: { id: 'u2', name: 'Bob' }, text: 'Absolutely beautiful!' }, { id: 'c2', user: { id: 'u3', name: 'Charlie' }, text: 'Enjoy!' } ], likes: 0, dislikes: 0 },
   { id: '2', user: { id: 'u2', name: 'Bob' }, content: 'Just had a great cup of coffee.', comments: [ { id: 'c3', user: { id: 'u1', name: 'Alice' }, text: 'I need one too!' } ], likes: 0, dislikes: 0 }
+]
+
+const initialBulletinPosts: BulletinPost[] = [
+  { id: 'b1', title: 'Announcement', content: 'Meeting at 3 PM', category: 'Announcement', x: 50, y: 100 },
+  { id: 'b2', title: 'Event', content: 'Team lunch tomorrow', category: 'Event', x: 150, y: 200 }
 ]
 
 const dummyFriends = [
@@ -21,17 +27,23 @@ const dummyFriends = [
 type PostsContextType = { posts: Post[]; setPosts: React.Dispatch<React.SetStateAction<Post[]>> }
 const PostsContext = createContext<PostsContextType>({ posts: [], setPosts: () => {} })
 
+type BulletinContextType = { bulletins: BulletinPost[]; setBulletins: React.Dispatch<React.SetStateAction<BulletinPost[]>> }
+const BulletinContext = createContext<BulletinContextType>({ bulletins: [], setBulletins: () => {} })
+
 type RootStackParamList = {
   Login: undefined
   Home: undefined
   Comments: { post: Post }
   Profile: { user?: { id: string; name: string }; current?: boolean }
   CreatePost: undefined
+  Bulletin: undefined
+  CreateBulletin: undefined
 }
 type TabParamList = {
   Feed: undefined
   Friends: undefined
   Profile: { current: boolean }
+  Bulletin: undefined
 }
 
 type LoginScreenProps = StackScreenProps<RootStackParamList, 'Login'>
@@ -51,12 +63,8 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
 
 const FeedScreen = ({ navigation }: { navigation: any }) => {
   const { posts, setPosts } = useContext(PostsContext)
-  const handleLike = (id: string) => {
-    setPosts(prev => prev.map(p => p.id === id ? { ...p, likes: p.likes + 1 } : p))
-  }
-  const handleDislike = (id: string) => {
-    setPosts(prev => prev.map(p => p.id === id ? { ...p, dislikes: p.dislikes + 1 } : p))
-  }
+  const handleLike = (id: string) => { setPosts(prev => prev.map(p => p.id === id ? { ...p, likes: p.likes + 1 } : p)) }
+  const handleDislike = (id: string) => { setPosts(prev => prev.map(p => p.id === id ? { ...p, dislikes: p.dislikes + 1 } : p)) }
   const renderPost = ({ item }: { item: Post }) => (
     <View style={styles.postContainer}>
       <TouchableOpacity onPress={() => navigation.navigate('Profile', { user: item.user, current: false })}>
@@ -78,8 +86,49 @@ const FeedScreen = ({ navigation }: { navigation: any }) => {
   )
 }
 
-type CreatePostScreenProps = StackScreenProps<RootStackParamList, 'CreatePost'>
-const CreatePostScreen = ({ navigation }: CreatePostScreenProps) => {
+const DraggableBulletin = ({ bulletin, updatePosition }: { bulletin: BulletinPost; updatePosition: (id: string, x: number, y: number) => void }) => {
+  const pan = useState(new Animated.ValueXY({ x: bulletin.x, y: bulletin.y }))[0]
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onPanResponderGrant: () => { pan.setOffset({ x: pan.x._value, y: pan.y._value }); pan.setValue({ x: 0, y: 0 }) },
+    onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], { useNativeDriver: false }),
+    onPanResponderRelease: () => { pan.flattenOffset(); updatePosition(bulletin.id, pan.x._value, pan.y._value) }
+  })
+  return (
+    <Animated.View {...panResponder.panHandlers} style={[{ position: 'absolute' }, pan.getLayout(), styles.bulletinBox]}>
+      <Text style={styles.bulletinTitle}>{bulletin.title}</Text>
+      <Text style={styles.bulletinContent}>{bulletin.content}</Text>
+      <Text style={styles.bulletinCategory}>{bulletin.category}</Text>
+    </Animated.View>
+  )
+}
+
+const BulletinScreen = ({ navigation }: { navigation: any }) => {
+  const { bulletins, setBulletins } = useContext(BulletinContext)
+  const [filter, setFilter] = useState('All')
+  const updateBulletinPosition = (id: string, x: number, y: number) => {
+    setBulletins(prev => prev.map(b => b.id === id ? { ...b, x, y } : b))
+  }
+  const categories = ['All', ...Array.from(new Set(bulletins.map(b => b.category)))]
+  const filteredBulletins = filter === 'All' ? bulletins : bulletins.filter(b => b.category === filter)
+  return (
+    <SafeAreaView style={styles.container}>
+      <Button title="Create Bulletin" onPress={() => navigation.navigate('CreateBulletin')} />
+      <View style={styles.filterContainer}>
+        {categories.map(cat => (
+          <Button key={cat} title={cat} onPress={() => setFilter(cat)} />
+        ))}
+      </View>
+      <View style={{ flex: 1 }}>
+        {filteredBulletins.map(bulletin => (
+          <DraggableBulletin key={bulletin.id} bulletin={bulletin} updatePosition={updateBulletinPosition} />
+        ))}
+      </View>
+    </SafeAreaView>
+  )
+}
+
+const CreatePostScreen = ({ navigation }: StackScreenProps<RootStackParamList, 'CreatePost'>) => {
   const { posts, setPosts } = useContext(PostsContext)
   const [content, setContent] = useState('')
   const handleCreate = () => {
@@ -92,6 +141,27 @@ const CreatePostScreen = ({ navigation }: CreatePostScreenProps) => {
       <Text style={styles.title}>Create New Post</Text>
       <TextInput placeholder="What's on your mind?" style={styles.input} value={content} onChangeText={setContent} />
       <Button title="Post" onPress={handleCreate} />
+    </SafeAreaView>
+  )
+}
+
+const CreateBulletinScreen = ({ navigation }: StackScreenProps<RootStackParamList, 'CreateBulletin'>) => {
+  const { bulletins, setBulletins } = useContext(BulletinContext)
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [category, setCategory] = useState('')
+  const handleCreate = () => {
+    const newBulletin: BulletinPost = { id: (bulletins.length + 1).toString(), title, content, category, x: 50, y: 50 }
+    setBulletins([newBulletin, ...bulletins])
+    navigation.goBack()
+  }
+  return (
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.title}>Create Bulletin</Text>
+      <TextInput placeholder="Title" style={styles.input} value={title} onChangeText={setTitle} />
+      <TextInput placeholder="Content" style={styles.input} value={content} onChangeText={setContent} />
+      <TextInput placeholder="Category" style={styles.input} value={category} onChangeText={setCategory} />
+      <Button title="Post Bulletin" onPress={handleCreate} />
     </SafeAreaView>
   )
 }
@@ -157,31 +227,37 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   )
 }
 
-const Tab = createBottomTabNavigator<TabParamList>()
+const TabNavigator = createBottomTabNavigator<TabParamList>()
 const HomeTabs = () => (
-  <Tab.Navigator screenOptions={{ headerShown: false }}>
-    <Tab.Screen name="Feed" component={FeedScreen} />
-    <Tab.Screen name="Friends" component={FriendsScreen} />
-    <Tab.Screen name="Profile" component={ProfileScreen} initialParams={{ current: true }} />
-  </Tab.Navigator>
+  <TabNavigator.Navigator screenOptions={{ headerShown: false }}>
+    <TabNavigator.Screen name="Feed" component={FeedScreen} />
+    <TabNavigator.Screen name="Friends" component={FriendsScreen} />
+    <TabNavigator.Screen name="Profile" component={ProfileScreen} initialParams={{ current: true }} />
+    <TabNavigator.Screen name="Bulletin" component={BulletinScreen} />
+  </TabNavigator.Navigator>
 )
 
-const Stack = createStackNavigator<RootStackParamList>()
+const StackNavigator = createStackNavigator<RootStackParamList>()
 const AppNavigator = () => (
-  <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="Login" component={LoginScreen} />
-    <Stack.Screen name="Home" component={HomeTabs} />
-    <Stack.Screen name="Comments" component={CommentsScreen} />
-    <Stack.Screen name="Profile" component={ProfileScreen} />
-    <Stack.Screen name="CreatePost" component={CreatePostScreen} />
-  </Stack.Navigator>
+  <StackNavigator.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+    <StackNavigator.Screen name="Login" component={LoginScreen} />
+    <StackNavigator.Screen name="Home" component={HomeTabs} />
+    <StackNavigator.Screen name="Comments" component={CommentsScreen} />
+    <StackNavigator.Screen name="Profile" component={ProfileScreen} />
+    <StackNavigator.Screen name="CreatePost" component={CreatePostScreen} />
+    <StackNavigator.Screen name="Bulletin" component={BulletinScreen} />
+    <StackNavigator.Screen name="CreateBulletin" component={CreateBulletinScreen} />
+  </StackNavigator.Navigator>
 )
 
 export default function App() {
   const [posts, setPosts] = useState<Post[]>(initialPosts)
+  const [bulletins, setBulletins] = useState<BulletinPost[]>(initialBulletinPosts)
   return (
     <PostsContext.Provider value={{ posts, setPosts }}>
-      <AppNavigator />
+      <BulletinContext.Provider value={{ bulletins, setBulletins }}>
+        <AppNavigator />
+      </BulletinContext.Provider>
     </PostsContext.Provider>
   )
 }
@@ -197,5 +273,10 @@ const styles = StyleSheet.create({
   commentUser: { fontWeight: 'bold', marginRight: 6 },
   commentText: { fontStyle: 'italic' },
   friendItem: { padding: 12, borderBottomWidth: 1, borderColor: '#eee' },
-  friendName: { fontSize: 16 }
+  friendName: { fontSize: 16 },
+  bulletinBox: { width: 150, padding: 10, backgroundColor: '#ffd', borderWidth: 1, borderColor: '#cc9', borderRadius: 6 },
+  bulletinTitle: { fontWeight: 'bold', marginBottom: 4 },
+  bulletinContent: { fontSize: 14 },
+  bulletinCategory: { fontSize: 12, marginTop: 4 },
+  filterContainer: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 10 }
 })
