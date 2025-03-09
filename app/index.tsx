@@ -1,22 +1,12 @@
-import React, { useState, createContext, useContext } from 'react'
-import { RouteProp } from '@react-navigation/native'
+import React, { useState, createContext, useContext, useEffect } from 'react'
+import { RouteProp, Dimensions, Animated, PanResponder, StyleSheet, View, Text, TextInput, Button, FlatList, TouchableOpacity, SafeAreaView, Alert } from 'react-native'
 import { createStackNavigator, StackScreenProps } from '@react-navigation/stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { StyleSheet, View, Text, TextInput, Button, FlatList, TouchableOpacity, SafeAreaView, Animated, PanResponder } from 'react-native'
+import { fetchPosts, createPost, fetchBulletins, createBulletin } from '../api'
 
 type Comment = { id: string; user: { id: string; name: string }; text: string }
 type Post = { id: string; user: { id: string; name: string }; content: string; comments: Comment[]; likes: number; dislikes: number }
 type BulletinPost = { id: string; title: string; content: string; category: string; x: number; y: number }
-
-const initialPosts: Post[] = [
-  { id: '1', user: { id: 'u1', name: 'Alice' }, content: 'Loving the weather today!', comments: [ { id: 'c1', user: { id: 'u2', name: 'Bob' }, text: 'Absolutely beautiful!' }, { id: 'c2', user: { id: 'u3', name: 'Charlie' }, text: 'Enjoy!' } ], likes: 0, dislikes: 0 },
-  { id: '2', user: { id: 'u2', name: 'Bob' }, content: 'Just had a great cup of coffee.', comments: [ { id: 'c3', user: { id: 'u1', name: 'Alice' }, text: 'I need one too!' } ], likes: 0, dislikes: 0 }
-]
-
-const initialBulletinPosts: BulletinPost[] = [
-  { id: 'b1', title: 'Announcement', content: 'Meeting at 3 PM', category: 'Announcement', x: 50, y: 100 },
-  { id: 'b2', title: 'Event', content: 'Team lunch tomorrow', category: 'Event', x: 150, y: 200 }
-]
 
 const dummyFriends = [
   { id: 'u1', name: 'Alice' },
@@ -25,10 +15,10 @@ const dummyFriends = [
 ]
 
 type PostsContextType = { posts: Post[]; setPosts: React.Dispatch<React.SetStateAction<Post[]>> }
-const PostsContext = createContext<PostsContextType>({ posts: [], setPosts: () => {} })
+export const PostsContext = createContext<PostsContextType>({ posts: [], setPosts: () => {} })
 
 type BulletinContextType = { bulletins: BulletinPost[]; setBulletins: React.Dispatch<React.SetStateAction<BulletinPost[]>> }
-const BulletinContext = createContext<BulletinContextType>({ bulletins: [], setBulletins: () => {} })
+export const BulletinContext = createContext<BulletinContextType>({ bulletins: [], setBulletins: () => {} })
 
 type RootStackParamList = {
   Login: undefined
@@ -50,7 +40,13 @@ type LoginScreenProps = StackScreenProps<RootStackParamList, 'Login'>
 const LoginScreen = ({ navigation }: LoginScreenProps) => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const handleLogin = () => { navigation.replace('Home') }
+  const handleLogin = () => {
+    if (!username.trim()) {
+      Alert.alert('Error', 'Username is required.')
+      return
+    }
+    navigation.replace('Home')
+  }
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Welcome to Jackets</Text>
@@ -81,12 +77,35 @@ const FeedScreen = ({ navigation }: { navigation: any }) => {
   return (
     <SafeAreaView style={styles.container}>
       <Button title="Create New Post" onPress={() => navigation.navigate('CreatePost')} />
-      <FlatList data={posts} keyExtractor={item => item.id} renderItem={renderPost} contentContainerStyle={{ padding: 10 }} />
+      <FlatList
+        data={posts}
+        keyExtractor={(item, index) => item.id ? item.id : `post-${index}`}
+        renderItem={renderPost}
+        contentContainerStyle={{ padding: 10 }}
+      />
     </SafeAreaView>
   )
 }
 
-const DraggableBulletin = ({ bulletin, updatePosition }: { bulletin: BulletinPost; updatePosition: (id: string, x: number, y: number) => void }) => {
+const CreatePostScreen = ({ navigation }: StackScreenProps<RootStackParamList, 'CreatePost'>) => {
+  const { posts, setPosts } = useContext(PostsContext)
+  const [content, setContent] = useState('')
+  const handleCreate = async () => {
+    const newPost: Post = { id: '', user: { id: 'current', name: 'You' }, content, comments: [], likes: 0, dislikes: 0 }
+    const savedPost = await createPost(newPost)
+    setPosts([savedPost, ...posts])
+    navigation.goBack()
+  }
+  return (
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.title}>Create New Post</Text>
+      <TextInput placeholder="What's on your mind?" style={styles.input} value={content} onChangeText={setContent} />
+      <Button title="Post" onPress={handleCreate} />
+    </SafeAreaView>
+  )
+}
+
+const DraggableBulletin = ({ bulletin, updatePosition, style = {} }: { bulletin: BulletinPost; updatePosition: (id: string, x: number, y: number) => void; style?: object }) => {
   const pan = useState(new Animated.ValueXY({ x: bulletin.x, y: bulletin.y }))[0]
   const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => true,
@@ -95,7 +114,7 @@ const DraggableBulletin = ({ bulletin, updatePosition }: { bulletin: BulletinPos
     onPanResponderRelease: () => { pan.flattenOffset(); updatePosition(bulletin.id, pan.x._value, pan.y._value) }
   })
   return (
-    <Animated.View {...panResponder.panHandlers} style={[{ position: 'absolute' }, pan.getLayout(), styles.bulletinBox]}>
+    <Animated.View {...panResponder.panHandlers} style={[{ position: 'absolute' }, pan.getLayout(), styles.bulletinBox, style]}>
       <Text style={styles.bulletinTitle}>{bulletin.title}</Text>
       <Text style={styles.bulletinContent}>{bulletin.content}</Text>
       <Text style={styles.bulletinCategory}>{bulletin.category}</Text>
@@ -110,7 +129,6 @@ const BulletinScreen = ({ navigation }: { navigation: any }) => {
     setBulletins(prev => prev.map(b => b.id === id ? { ...b, x, y } : b))
   }
   const categories = ['All', ...Array.from(new Set(bulletins.map(b => b.category)))]
-  const filteredBulletins = filter === 'All' ? bulletins : bulletins.filter(b => b.category === filter)
   return (
     <SafeAreaView style={styles.container}>
       <Button title="Create Bulletin" onPress={() => navigation.navigate('CreateBulletin')} />
@@ -120,27 +138,18 @@ const BulletinScreen = ({ navigation }: { navigation: any }) => {
         ))}
       </View>
       <View style={{ flex: 1 }}>
-        {filteredBulletins.map(bulletin => (
-          <DraggableBulletin key={bulletin.id} bulletin={bulletin} updatePosition={updateBulletinPosition} />
-        ))}
+        {bulletins.map((bulletin, index) => {
+          const isVisible = filter === 'All' || bulletin.category === filter
+          return (
+            <DraggableBulletin
+              key={bulletin.id ? bulletin.id : `bulletin-${index}`}
+              bulletin={bulletin}
+              updatePosition={updateBulletinPosition}
+              style={isVisible ? {} : { display: 'none' }}
+            />
+          )
+        })}
       </View>
-    </SafeAreaView>
-  )
-}
-
-const CreatePostScreen = ({ navigation }: StackScreenProps<RootStackParamList, 'CreatePost'>) => {
-  const { posts, setPosts } = useContext(PostsContext)
-  const [content, setContent] = useState('')
-  const handleCreate = () => {
-    const newPost: Post = { id: (posts.length + 1).toString(), user: { id: 'current', name: 'You' }, content, comments: [], likes: 0, dislikes: 0 }
-    setPosts([newPost, ...posts])
-    navigation.goBack()
-  }
-  return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Create New Post</Text>
-      <TextInput placeholder="What's on your mind?" style={styles.input} value={content} onChangeText={setContent} />
-      <Button title="Post" onPress={handleCreate} />
     </SafeAreaView>
   )
 }
@@ -150,9 +159,10 @@ const CreateBulletinScreen = ({ navigation }: StackScreenProps<RootStackParamLis
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [category, setCategory] = useState('')
-  const handleCreate = () => {
-    const newBulletin: BulletinPost = { id: (bulletins.length + 1).toString(), title, content, category, x: 50, y: 50 }
-    setBulletins([newBulletin, ...bulletins])
+  const handleCreate = async () => {
+    const newBulletin: BulletinPost = { id: '', title, content, category, x: 50, y: 50 }
+    const savedBulletin = await createBulletin(newBulletin)
+    setBulletins([savedBulletin, ...bulletins])
     navigation.goBack()
   }
   return (
@@ -175,12 +185,17 @@ const CommentsScreen = ({ route, navigation }: CommentsScreenProps) => {
     <SafeAreaView style={styles.container}>
       <Button title="Back" onPress={() => navigation.goBack()} />
       <Text style={styles.title}>Comments for: {post.content}</Text>
-      <FlatList data={post.comments} keyExtractor={item => item.id} renderItem={({ item }) => (
-        <View style={styles.commentContainer}>
-          <Text style={styles.commentUser}>{item.user.name}:</Text>
-          <Text style={styles.commentText}>{item.text}</Text>
-        </View>
-      )} contentContainerStyle={{ padding: 10 }} />
+      <FlatList
+        data={post.comments}
+        keyExtractor={(item, index) => item.id ? item.id : `comment-${index}`}
+        renderItem={({ item }) => (
+          <View style={styles.commentContainer}>
+            <Text style={styles.commentUser}>{item.user.name}:</Text>
+            <Text style={styles.commentText}>{item.text}</Text>
+          </View>
+        )}
+        contentContainerStyle={{ padding: 10 }}
+      />
       <TextInput placeholder="Add a comment..." style={styles.input} value={commentText} onChangeText={setCommentText} />
       <Button title="Post Comment" onPress={handleAddComment} />
     </SafeAreaView>
@@ -196,7 +211,12 @@ const FriendsScreen = ({ navigation }: { navigation: any }) => {
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Your Friends</Text>
-      <FlatList data={dummyFriends} keyExtractor={item => item.id} renderItem={renderFriend} contentContainerStyle={{ padding: 10 }} />
+      <FlatList
+        data={dummyFriends}
+        keyExtractor={(item, index) => item.id ? item.id : `friend-${index}`}
+        renderItem={renderFriend}
+        contentContainerStyle={{ padding: 10 }}
+      />
     </SafeAreaView>
   )
 }
@@ -251,8 +271,20 @@ const AppNavigator = () => (
 )
 
 export default function App() {
-  const [posts, setPosts] = useState<Post[]>(initialPosts)
-  const [bulletins, setBulletins] = useState<BulletinPost[]>(initialBulletinPosts)
+  const [posts, setPosts] = useState<Post[]>([])
+  const [bulletins, setBulletins] = useState<BulletinPost[]>([])
+  useEffect(() => {
+    fetchPosts().then(data => setPosts(data))
+    fetchBulletins().then(data => {
+      const { width } = Dimensions.get('window')
+      const randomized = data.map((bulletin, index) => ({
+        ...bulletin,
+        x: Math.random() * (width - 150),
+        y: Math.random() * 300
+      }))
+      setBulletins(randomized)
+    })
+  }, [])
   return (
     <PostsContext.Provider value={{ posts, setPosts }}>
       <BulletinContext.Provider value={{ bulletins, setBulletins }}>
