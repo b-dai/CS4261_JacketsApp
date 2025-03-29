@@ -3,6 +3,8 @@ import { RouteProp, Dimensions, Animated, PanResponder, StyleSheet, View, Text, 
 import { createStackNavigator, StackScreenProps } from '@react-navigation/stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { fetchPosts, createPost, fetchBulletins, createBulletin } from '../api'
+import { auth } from '../firebase'
+import { signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth'
 
 type Comment = { id: string; user: { id: string; name: string }; text: string }
 type Post = { id: string; user: { id: string; name: string }; content: string; comments: Comment[]; likes: number; dislikes: number }
@@ -22,6 +24,7 @@ export const BulletinContext = createContext<BulletinContextType>({ bulletins: [
 
 type RootStackParamList = {
   Login: undefined
+  Register: undefined
   Home: undefined
   Comments: { post: Post }
   Profile: { user?: { id: string; name: string }; current?: boolean }
@@ -38,21 +41,56 @@ type TabParamList = {
 
 type LoginScreenProps = StackScreenProps<RootStackParamList, 'Login'>
 const LoginScreen = ({ navigation }: LoginScreenProps) => {
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const handleLogin = () => {
-    if (!username.trim()) {
-      Alert.alert('Error', 'Username is required.')
-      return
+  const handleLogin = async () => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      if (!userCredential.user.emailVerified) {
+        Alert.alert('Verification', 'Please verify your email before logging in.')
+        await signOut(auth)
+        return
+      }
+      navigation.replace('Home')
+    } catch (error: any) {
+      Alert.alert('Login Error', error.message)
     }
-    navigation.replace('Home')
   }
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Welcome to Jackets</Text>
-      <TextInput placeholder="Username" style={styles.input} value={username} onChangeText={setUsername} />
+      <TextInput placeholder="Email" style={styles.input} value={email} onChangeText={setEmail} autoCapitalize="none" />
       <TextInput placeholder="Password" secureTextEntry style={styles.input} value={password} onChangeText={setPassword} />
       <Button title="Login" onPress={handleLogin} />
+      <Button title="Register" onPress={() => navigation.navigate('Register')} />
+    </SafeAreaView>
+  )
+}
+
+type RegisterScreenProps = StackScreenProps<RootStackParamList, 'Register'>
+const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const handleRegister = async () => {
+    if (!email.endsWith('@gatech.edu')) {
+      Alert.alert('Error', 'Email must be a @gatech.edu address')
+      return
+    }
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      await sendEmailVerification(userCredential.user)
+      Alert.alert('Success', 'Verification email sent. Please verify before logging in.')
+      navigation.goBack()
+    } catch (error: any) {
+      Alert.alert('Registration Error', error.message)
+    }
+  }
+  return (
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.title}>Register</Text>
+      <TextInput placeholder="Email" style={styles.input} value={email} onChangeText={setEmail} autoCapitalize="none" />
+      <TextInput placeholder="Password" secureTextEntry style={styles.input} value={password} onChangeText={setPassword} />
+      <Button title="Register" onPress={handleRegister} />
     </SafeAreaView>
   )
 }
@@ -77,12 +115,7 @@ const FeedScreen = ({ navigation }: { navigation: any }) => {
   return (
     <SafeAreaView style={styles.container}>
       <Button title="Create New Post" onPress={() => navigation.navigate('CreatePost')} />
-      <FlatList
-        data={posts}
-        keyExtractor={(item, index) => item.id ? item.id : `post-${index}`}
-        renderItem={renderPost}
-        contentContainerStyle={{ padding: 10 }}
-      />
+      <FlatList data={posts} keyExtractor={(item, index) => item.id ? item.id : `post-${index}`} renderItem={renderPost} contentContainerStyle={{ padding: 10 }} />
     </SafeAreaView>
   )
 }
@@ -125,17 +158,13 @@ const DraggableBulletin = ({ bulletin, updatePosition, style = {} }: { bulletin:
 const BulletinScreen = ({ navigation }: { navigation: any }) => {
   const { bulletins, setBulletins } = useContext(BulletinContext)
   const [filter, setFilter] = useState('All')
-  const updateBulletinPosition = (id: string, x: number, y: number) => {
-    setBulletins(prev => prev.map(b => b.id === id ? { ...b, x, y } : b))
-  }
+  const updateBulletinPosition = (id: string, x: number, y: number) => { setBulletins(prev => prev.map(b => b.id === id ? { ...b, x, y } : b)) }
   const categories = ['All', ...Array.from(new Set(bulletins.map(b => b.category)))]
   return (
     <SafeAreaView style={styles.container}>
       <Button title="Create Bulletin" onPress={() => navigation.navigate('CreateBulletin')} />
       <View style={styles.filterContainer}>
-        {categories.map(cat => (
-          <Button key={cat} title={cat} onPress={() => setFilter(cat)} />
-        ))}
+        {categories.map(cat => (<Button key={cat} title={cat} onPress={() => setFilter(cat)} />))}
       </View>
       <View style={{ flex: 1 }}>
         {bulletins.map((bulletin, index) => {
@@ -180,7 +209,7 @@ type CommentsScreenProps = StackScreenProps<RootStackParamList, 'Comments'>
 const CommentsScreen = ({ route, navigation }: CommentsScreenProps) => {
   const { post } = route.params
   const [commentText, setCommentText] = useState('')
-  const handleAddComment = () => { alert(`Comment added: ${commentText}`); setCommentText('') }
+  const handleAddComment = () => { Alert.alert(`Comment added: ${commentText}`); setCommentText('') }
   return (
     <SafeAreaView style={styles.container}>
       <Button title="Back" onPress={() => navigation.goBack()} />
@@ -227,7 +256,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const params = route.params as { user?: { id: string; name: string }; current?: boolean }
   const user = params.user || { id: 'current', name: 'You' }
   const [isFriend, setIsFriend] = useState(false)
-  const handleAddFriend = () => { setIsFriend(true); alert(`You are now friends with ${user.name}`) }
+  const handleAddFriend = () => { setIsFriend(true); Alert.alert(`You are now friends with ${user.name}`) }
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Profile: {user.name}</Text>
@@ -261,6 +290,7 @@ const StackNavigator = createStackNavigator<RootStackParamList>()
 const AppNavigator = () => (
   <StackNavigator.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
     <StackNavigator.Screen name="Login" component={LoginScreen} />
+    <StackNavigator.Screen name="Register" component={RegisterScreen} />
     <StackNavigator.Screen name="Home" component={HomeTabs} />
     <StackNavigator.Screen name="Comments" component={CommentsScreen} />
     <StackNavigator.Screen name="Profile" component={ProfileScreen} />
