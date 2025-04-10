@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { fetchPosts, createPost, fetchBulletins, createBulletin } from '../api'
 import { auth } from '../firebase'
 import { signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth'
+import { getFirestore, collection, onSnapshot } from 'firebase/firestore'
 
 type Comment = { id: string; user: { id: string; name: string }; text: string }
 type Post = { id: string; user: { id: string; name: string }; content: string; comments: Comment[]; likes: number; dislikes: number }
@@ -61,8 +62,12 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
       <Text style={styles.title}>Welcome to Jackets</Text>
       <TextInput placeholder="Email" style={styles.input} value={email} onChangeText={setEmail} autoCapitalize="none" />
       <TextInput placeholder="Password" secureTextEntry style={styles.input} value={password} onChangeText={setPassword} />
-      <Button title="Login" onPress={handleLogin} />
-      <Button title="Register" onPress={() => navigation.navigate('Register')} />
+      <View style={styles.buttonContainer}>
+        <Button title="Login" onPress={handleLogin} color="#4A90E2" />
+      </View>
+      <View style={styles.buttonContainer}>
+        <Button title="Register" onPress={() => navigation.navigate('Register')} color="#50E3C2" />
+      </View>
     </SafeAreaView>
   )
 }
@@ -90,7 +95,9 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
       <Text style={styles.title}>Register</Text>
       <TextInput placeholder="Email" style={styles.input} value={email} onChangeText={setEmail} autoCapitalize="none" />
       <TextInput placeholder="Password" secureTextEntry style={styles.input} value={password} onChangeText={setPassword} />
-      <Button title="Register" onPress={handleRegister} />
+      <View style={styles.buttonContainer}>
+        <Button title="Register" onPress={handleRegister} color="#4A90E2" />
+      </View>
     </SafeAreaView>
   )
 }
@@ -105,17 +112,21 @@ const FeedScreen = ({ navigation }: { navigation: any }) => {
         <Text style={styles.postUser}>{item.user.name}</Text>
       </TouchableOpacity>
       <Text style={styles.postContent}>{item.content}</Text>
-      <View style={{ flexDirection: 'row', marginBottom: 8 }}>
-        <Button title={`Like (${item.likes})`} onPress={() => handleLike(item.id)} />
-        <Button title={`Dislike (${item.dislikes})`} onPress={() => handleDislike(item.id)} />
+      <View style={styles.reactionContainer}>
+        <Button title={`Like (${item.likes})`} onPress={() => handleLike(item.id)} color="#4A90E2" />
+        <Button title={`Dislike (${item.dislikes})`} onPress={() => handleDislike(item.id)} color="#D0021B" />
       </View>
-      <Button title={`View Comments (${item.comments.length})`} onPress={() => navigation.navigate('Comments', { post: item })} />
+      <View style={styles.buttonContainer}>
+        <Button title={`View Comments (${item.comments.length})`} onPress={() => navigation.navigate('Comments', { post: item })} color="#9013FE" />
+      </View>
     </View>
   )
   return (
     <SafeAreaView style={styles.container}>
-      <Button title="Create New Post" onPress={() => navigation.navigate('CreatePost')} />
-      <FlatList data={posts} keyExtractor={(item, index) => item.id ? item.id : `post-${index}`} renderItem={renderPost} contentContainerStyle={{ padding: 10 }} />
+      <View style={styles.headerButtonContainer}>
+        <Button title="Create New Post" onPress={() => navigation.navigate('CreatePost')} color="#50E3C2" />
+      </View>
+      <FlatList data={posts} keyExtractor={(item, index) => item.id ? item.id : `post-${index}`} renderItem={renderPost} contentContainerStyle={styles.flatListContent} />
     </SafeAreaView>
   )
 }
@@ -132,8 +143,10 @@ const CreatePostScreen = ({ navigation }: StackScreenProps<RootStackParamList, '
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Create New Post</Text>
-      <TextInput placeholder="What's on your mind?" style={styles.input} value={content} onChangeText={setContent} />
-      <Button title="Post" onPress={handleCreate} />
+      <TextInput placeholder="What's on your mind?" style={styles.input} value={content} onChangeText={setContent} multiline />
+      <View style={styles.buttonContainer}>
+        <Button title="Post" onPress={handleCreate} color="#4A90E2" />
+      </View>
     </SafeAreaView>
   )
 }
@@ -147,7 +160,7 @@ const DraggableBulletin = ({ bulletin, updatePosition, style = {} }: { bulletin:
     onPanResponderRelease: () => { pan.flattenOffset(); updatePosition(bulletin.id, pan.x._value, pan.y._value) }
   })
   return (
-    <Animated.View {...panResponder.panHandlers} style={[{ position: 'absolute' }, pan.getLayout(), styles.bulletinBox, style]}>
+    <Animated.View {...panResponder.panHandlers} style={[pan.getLayout(), styles.bulletinBox, style]}>
       <Text style={styles.bulletinTitle}>{bulletin.title}</Text>
       <Text style={styles.bulletinContent}>{bulletin.content}</Text>
       <Text style={styles.bulletinCategory}>{bulletin.category}</Text>
@@ -162,11 +175,17 @@ const BulletinScreen = ({ navigation }: { navigation: any }) => {
   const categories = ['All', ...Array.from(new Set(bulletins.map(b => b.category)))]
   return (
     <SafeAreaView style={styles.container}>
-      <Button title="Create Bulletin" onPress={() => navigation.navigate('CreateBulletin')} />
-      <View style={styles.filterContainer}>
-        {categories.map(cat => (<Button key={cat} title={cat} onPress={() => setFilter(cat)} />))}
+      <View style={styles.headerButtonContainer}>
+        <Button title="Create Bulletin" onPress={() => navigation.navigate('CreateBulletin')} color="#50E3C2" />
       </View>
-      <View style={{ flex: 1 }}>
+      <View style={styles.filterContainer}>
+        {categories.map(cat => (
+          <View key={cat} style={styles.filterButton}>
+            <Button title={cat} onPress={() => setFilter(cat)} color="#4A90E2" />
+          </View>
+        ))}
+      </View>
+      <View style={styles.bulletinContainer}>
         {bulletins.map((bulletin, index) => {
           const isVisible = filter === 'All' || bulletin.category === filter
           return (
@@ -198,9 +217,11 @@ const CreateBulletinScreen = ({ navigation }: StackScreenProps<RootStackParamLis
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Create Bulletin</Text>
       <TextInput placeholder="Title" style={styles.input} value={title} onChangeText={setTitle} />
-      <TextInput placeholder="Content" style={styles.input} value={content} onChangeText={setContent} />
+      <TextInput placeholder="Content" style={styles.input} value={content} onChangeText={setContent} multiline />
       <TextInput placeholder="Category" style={styles.input} value={category} onChangeText={setCategory} />
-      <Button title="Post Bulletin" onPress={handleCreate} />
+      <View style={styles.buttonContainer}>
+        <Button title="Post Bulletin" onPress={handleCreate} color="#4A90E2" />
+      </View>
     </SafeAreaView>
   )
 }
@@ -212,7 +233,9 @@ const CommentsScreen = ({ route, navigation }: CommentsScreenProps) => {
   const handleAddComment = () => { Alert.alert(`Comment added: ${commentText}`); setCommentText('') }
   return (
     <SafeAreaView style={styles.container}>
-      <Button title="Back" onPress={() => navigation.goBack()} />
+      <View style={styles.headerButtonContainer}>
+        <Button title="Back" onPress={() => navigation.goBack()} color="#D0021B" />
+      </View>
       <Text style={styles.title}>Comments for: {post.content}</Text>
       <FlatList
         data={post.comments}
@@ -223,10 +246,12 @@ const CommentsScreen = ({ route, navigation }: CommentsScreenProps) => {
             <Text style={styles.commentText}>{item.text}</Text>
           </View>
         )}
-        contentContainerStyle={{ padding: 10 }}
+        contentContainerStyle={styles.flatListContent}
       />
       <TextInput placeholder="Add a comment..." style={styles.input} value={commentText} onChangeText={setCommentText} />
-      <Button title="Post Comment" onPress={handleAddComment} />
+      <View style={styles.buttonContainer}>
+        <Button title="Post Comment" onPress={handleAddComment} color="#4A90E2" />
+      </View>
     </SafeAreaView>
   )
 }
@@ -244,7 +269,7 @@ const FriendsScreen = ({ navigation }: { navigation: any }) => {
         data={dummyFriends}
         keyExtractor={(item, index) => item.id ? item.id : `friend-${index}`}
         renderItem={renderFriend}
-        contentContainerStyle={{ padding: 10 }}
+        contentContainerStyle={styles.flatListContent}
       />
     </SafeAreaView>
   )
@@ -261,14 +286,16 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Profile: {user.name}</Text>
       {params.current ? (
-        <Text>This is your profile.</Text>
+        <Text style={styles.text}>This is your profile.</Text>
       ) : (
         <>
-          <Text>Some dummy info about {user.name}.</Text>
+          <Text style={styles.text}>Some dummy info about {user.name}.</Text>
           {!isFriend ? (
-            <Button title="Add Friend" onPress={handleAddFriend} />
+            <View style={styles.buttonContainer}>
+              <Button title="Add Friend" onPress={handleAddFriend} color="#50E3C2" />
+            </View>
           ) : (
-            <Text>You are friends!</Text>
+            <Text style={styles.text}>You are friends!</Text>
           )}
         </>
       )}
@@ -303,18 +330,25 @@ const AppNavigator = () => (
 export default function App() {
   const [posts, setPosts] = useState<Post[]>([])
   const [bulletins, setBulletins] = useState<BulletinPost[]>([])
+  const dbWidth = Dimensions.get('window').width
   useEffect(() => {
-    fetchPosts().then(data => setPosts(data))
-    fetchBulletins().then(data => {
-      const { width } = Dimensions.get('window')
-      const randomized = data.map((bulletin, index) => ({
-        ...bulletin,
-        x: Math.random() * (width - 150),
-        y: Math.random() * 300
-      }))
+    const db = dbWidth
+    const unsubPosts = onSnapshot(collection(getFirestore(), "posts"), snapshot => {
+      const fetchedPosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Post[]
+      setPosts(fetchedPosts)
+    })
+    const unsubBulletins = onSnapshot(collection(getFirestore(), "bulletins"), snapshot => {
+      const randomized = snapshot.docs.map(doc => {
+        const bulletin = { id: doc.id, ...doc.data() } as BulletinPost
+        return { ...bulletin, x: Math.random() * (dbWidth - 150), y: Math.random() * 300 }
+      })
       setBulletins(randomized)
     })
-  }, [])
+    return () => {
+      unsubPosts()
+      unsubBulletins()
+    }
+  }, [dbWidth])
   return (
     <PostsContext.Provider value={{ posts, setPosts }}>
       <BulletinContext.Provider value={{ bulletins, setBulletins }}>
@@ -325,20 +359,133 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
-  title: { fontSize: 22, fontWeight: '600', marginBottom: 16 },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 10, marginBottom: 12, borderRadius: 4 },
-  postContainer: { marginBottom: 20, padding: 12, borderWidth: 1, borderColor: '#ddd', borderRadius: 6, backgroundColor: '#fafafa' },
-  postUser: { fontWeight: 'bold', marginBottom: 4, fontSize: 16 },
-  postContent: { marginBottom: 8, fontSize: 14 },
-  commentContainer: { flexDirection: 'row', marginBottom: 4 },
-  commentUser: { fontWeight: 'bold', marginRight: 6 },
-  commentText: { fontStyle: 'italic' },
-  friendItem: { padding: 12, borderBottomWidth: 1, borderColor: '#eee' },
-  friendName: { fontSize: 16 },
-  bulletinBox: { width: 150, padding: 10, backgroundColor: '#ffd', borderWidth: 1, borderColor: '#cc9', borderRadius: 6 },
-  bulletinTitle: { fontWeight: 'bold', marginBottom: 4 },
-  bulletinContent: { fontSize: 14 },
-  bulletinCategory: { fontSize: 12, marginTop: 4 },
-  filterContainer: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 10 }
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 30,
+    backgroundColor: '#FAFAFC'
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 24,
+    color: '#333'
+  },
+  text: {
+    fontSize: 16,
+    color: '#555',
+    marginBottom: 12
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#aaa',
+    padding: 12,
+    marginBottom: 16,
+    borderRadius: 8,
+    backgroundColor: '#fff'
+  },
+  buttonContainer: {
+    marginBottom: 16,
+    borderRadius: 8,
+    overflow: 'hidden'
+  },
+  headerButtonContainer: {
+    marginBottom: 20,
+    alignSelf: 'center',
+    width: '80%'
+  },
+  postContainer: {
+    marginBottom: 24,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2
+  },
+  postUser: {
+    fontWeight: '700',
+    marginBottom: 6,
+    fontSize: 18,
+    color: '#222'
+  },
+  postContent: {
+    marginBottom: 12,
+    fontSize: 16,
+    color: '#444'
+  },
+  reactionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12
+  },
+  commentContainer: {
+    flexDirection: 'row',
+    marginBottom: 8,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee'
+  },
+  commentUser: {
+    fontWeight: '700',
+    marginRight: 8,
+    fontSize: 16,
+    color: '#333'
+  },
+  commentText: {
+    fontSize: 16,
+    color: '#555'
+  },
+  friendItem: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee'
+  },
+  friendName: {
+    fontSize: 18,
+    color: '#333'
+  },
+  bulletinBox: {
+    width: 150,
+    padding: 12,
+    backgroundColor: '#FFF4E5',
+    borderWidth: 1,
+    borderColor: '#E0B87F',
+    borderRadius: 10
+  },
+  bulletinTitle: {
+    fontWeight: '700',
+    marginBottom: 4,
+    fontSize: 16,
+    color: '#8A4B29'
+  },
+  bulletinContent: {
+    fontSize: 15,
+    color: '#663D26'
+  },
+  bulletinCategory: {
+    fontSize: 13,
+    marginTop: 4,
+    color: '#A67C52'
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20
+  },
+  filterButton: {
+    flex: 1,
+    marginHorizontal: 4
+  },
+  bulletinContainer: {
+    flex: 1,
+    position: 'relative'
+  },
+  flatListContent: {
+    paddingBottom: 20
+  }
 })
