@@ -6,7 +6,7 @@ const path = require("path");
 
 admin.initializeApp();
 
-const swearWordsPath = path.join(__dirname, "..", "swearWords.txt");
+const swearWordsPath = path.join(__dirname, "swearWords.txt");
 const swearWordsContent = fs.readFileSync(swearWordsPath, "utf8");
 const explicitWords = swearWordsContent.split("\n").map(word => word.trim()).filter(word => word.length > 0);
 

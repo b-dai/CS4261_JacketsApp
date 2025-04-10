@@ -1,0 +1,103 @@
+[debug] [2025-04-10T18:50:18.970Z] ----------------------------------------------------------------------
+[debug] [2025-04-10T18:50:18.973Z] Command:       C:\nvm4w\nodejs\node.exe C:\nvm4w\nodejs\node_modules\firebase-tools\lib\bin\firebase.js deploy --only functions
+[debug] [2025-04-10T18:50:18.974Z] CLI Version:   14.1.0
+[debug] [2025-04-10T18:50:18.974Z] Platform:      win32
+[debug] [2025-04-10T18:50:18.974Z] Node Version:  v22.14.0
+[debug] [2025-04-10T18:50:18.975Z] Time:          Thu Apr 10 2025 14:50:18 GMT-0400 (Eastern Daylight Time)
+[debug] [2025-04-10T18:50:18.975Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-04-10T18:50:19.194Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-04-10T18:50:19.194Z] > authorizing via signed-in user (thebdaiman@gmail.com)
+[debug] [2025-04-10T18:50:19.194Z] [iam] checking project cs4261jacketsapp for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2025-04-10T18:50:19.195Z] Checked if tokens are valid: true, expires at: 1744312161823
+[debug] [2025-04-10T18:50:19.195Z] Checked if tokens are valid: true, expires at: 1744312161823
+[debug] [2025-04-10T18:50:19.196Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/cs4261jacketsapp:testIamPermissions [none]
+[debug] [2025-04-10T18:50:19.196Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/cs4261jacketsapp:testIamPermissions x-goog-quota-user=projects/cs4261jacketsapp
+[debug] [2025-04-10T18:50:19.197Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/cs4261jacketsapp:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2025-04-10T18:50:19.365Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/cs4261jacketsapp:testIamPermissions 200
+[debug] [2025-04-10T18:50:19.365Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/cs4261jacketsapp:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2025-04-10T18:50:19.366Z] Checked if tokens are valid: true, expires at: 1744312161823
+[debug] [2025-04-10T18:50:19.367Z] Checked if tokens are valid: true, expires at: 1744312161823
+[debug] [2025-04-10T18:50:19.367Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/cs4261jacketsapp/serviceAccounts/cs4261jacketsapp@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2025-04-10T18:50:19.367Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/cs4261jacketsapp/serviceAccounts/cs4261jacketsapp@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-04-10T18:50:19.603Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/cs4261jacketsapp/serviceAccounts/cs4261jacketsapp@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2025-04-10T18:50:19.603Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/cs4261jacketsapp/serviceAccounts/cs4261jacketsapp@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[info] 
+[info] === Deploying to 'cs4261jacketsapp'...
+[info] 
+[info] i  deploying functions 
+[info] Running command: npm --prefix "$RESOURCE_DIR" run lint
+[info] +  functions: Finished running predeploy script. 
+[debug] [2025-04-10T18:50:20.399Z] Checked if tokens are valid: true, expires at: 1744312161823
+[debug] [2025-04-10T18:50:20.399Z] Checked if tokens are valid: true, expires at: 1744312161823
+[debug] [2025-04-10T18:50:20.400Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/cs4261jacketsapp [none]
+[debug] [2025-04-10T18:50:20.526Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/cs4261jacketsapp 200
+[debug] [2025-04-10T18:50:20.526Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/cs4261jacketsapp {"projectNumber":"849450701292","projectId":"cs4261jacketsapp","lifecycleState":"ACTIVE","name":"CS4261JacketsApp","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2025-03-09T00:24:01.971980Z"}
+[info] i  functions: preparing codebase default for deployment 
+[info] i  functions: ensuring required API cloudfunctions.googleapis.com is enabled... 
+[debug] [2025-04-10T18:50:20.529Z] Checked if tokens are valid: true, expires at: 1744312161823
+[debug] [2025-04-10T18:50:20.529Z] Checked if tokens are valid: true, expires at: 1744312161823
+[debug] [2025-04-10T18:50:20.529Z] Checked if tokens are valid: true, expires at: 1744312161823
+[debug] [2025-04-10T18:50:20.529Z] Checked if tokens are valid: true, expires at: 1744312161823
+[info] i  functions: ensuring required API cloudbuild.googleapis.com is enabled... 
+[debug] [2025-04-10T18:50:20.530Z] Checked if tokens are valid: true, expires at: 1744312161823
+[debug] [2025-04-10T18:50:20.530Z] Checked if tokens are valid: true, expires at: 1744312161823
+[info] i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled... 
+[debug] [2025-04-10T18:50:20.531Z] Checked if tokens are valid: true, expires at: 1744312161823
+[debug] [2025-04-10T18:50:20.531Z] Checked if tokens are valid: true, expires at: 1744312161823
+[debug] [2025-04-10T18:50:20.531Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cs4261jacketsapp/services/cloudfunctions.googleapis.com [none]
+[debug] [2025-04-10T18:50:20.531Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cs4261jacketsapp/services/cloudfunctions.googleapis.com x-goog-quota-user=projects/cs4261jacketsapp
+[debug] [2025-04-10T18:50:20.532Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cs4261jacketsapp/services/runtimeconfig.googleapis.com [none]
+[debug] [2025-04-10T18:50:20.533Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cs4261jacketsapp/services/runtimeconfig.googleapis.com x-goog-quota-user=projects/cs4261jacketsapp
+[debug] [2025-04-10T18:50:20.534Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cs4261jacketsapp/services/cloudbuild.googleapis.com [none]
+[debug] [2025-04-10T18:50:20.534Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cs4261jacketsapp/services/cloudbuild.googleapis.com x-goog-quota-user=projects/cs4261jacketsapp
+[debug] [2025-04-10T18:50:20.535Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cs4261jacketsapp/services/artifactregistry.googleapis.com [none]
+[debug] [2025-04-10T18:50:20.535Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cs4261jacketsapp/services/artifactregistry.googleapis.com x-goog-quota-user=projects/cs4261jacketsapp
+[debug] [2025-04-10T18:50:20.940Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cs4261jacketsapp/services/runtimeconfig.googleapis.com 200
+[debug] [2025-04-10T18:50:20.940Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cs4261jacketsapp/services/runtimeconfig.googleapis.com [omitted]
+[debug] [2025-04-10T18:50:20.942Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cs4261jacketsapp/services/cloudbuild.googleapis.com 200
+[debug] [2025-04-10T18:50:20.942Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cs4261jacketsapp/services/cloudbuild.googleapis.com [omitted]
+[info] +  functions: required API cloudbuild.googleapis.com is enabled 
+[debug] [2025-04-10T18:50:20.944Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cs4261jacketsapp/services/cloudfunctions.googleapis.com 200
+[debug] [2025-04-10T18:50:20.944Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cs4261jacketsapp/services/cloudfunctions.googleapis.com [omitted]
+[info] +  functions: required API cloudfunctions.googleapis.com is enabled 
+[debug] [2025-04-10T18:50:20.948Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cs4261jacketsapp/services/artifactregistry.googleapis.com 200
+[debug] [2025-04-10T18:50:20.948Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cs4261jacketsapp/services/artifactregistry.googleapis.com [omitted]
+[info] +  artifactregistry: required API artifactregistry.googleapis.com is enabled 
+[debug] [2025-04-10T18:50:20.949Z] Checked if tokens are valid: true, expires at: 1744312161823
+[debug] [2025-04-10T18:50:20.949Z] Checked if tokens are valid: true, expires at: 1744312161823
+[debug] [2025-04-10T18:50:20.949Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/cs4261jacketsapp/adminSdkConfig [none]
+[debug] [2025-04-10T18:50:21.137Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/cs4261jacketsapp/adminSdkConfig 200
+[debug] [2025-04-10T18:50:21.137Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/cs4261jacketsapp/adminSdkConfig {"projectId":"cs4261jacketsapp","storageBucket":"cs4261jacketsapp.firebasestorage.app"}
+[debug] [2025-04-10T18:50:21.138Z] Checked if tokens are valid: true, expires at: 1744312161823
+[debug] [2025-04-10T18:50:21.138Z] Checked if tokens are valid: true, expires at: 1744312161823
+[debug] [2025-04-10T18:50:21.138Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/cs4261jacketsapp/configs [none]
+[debug] [2025-04-10T18:50:21.447Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/cs4261jacketsapp/configs 200
+[debug] [2025-04-10T18:50:21.447Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/cs4261jacketsapp/configs {}
+[debug] [2025-04-10T18:50:21.451Z] Validating nodejs source
+[debug] [2025-04-10T18:50:22.607Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase project",
+  "scripts": {
+    "lint": "echo \"Lint skipped\"",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "firebase-admin": "^11.0.0",
+    "firebase-functions": "^6.3.2"
+  },
+  "private": true
+}
+[debug] [2025-04-10T18:50:22.607Z] Building nodejs source
+[info] i  functions: Loading and analyzing source code for codebase default to determine what to deploy 
+[debug] [2025-04-10T18:50:22.608Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-04-10T18:50:22.617Z] Found firebase-functions binary at 'C:\Users\thebd\CS4261_JacketsApp\functions\node_modules\.bin\firebase-functions'
+[info] Serving at port 8277
+
+[debug] [2025-04-10T18:50:22.942Z] Got response from /__/functions.yaml {"endpoints":{"filterExplicitContent":{"availableMemoryMb":null,"timeoutSeconds":60,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"scheduleTrigger":{"schedule":"every 5 minutes","retryConfig":{}},"entryPoint":"filterExplicitContent"}},"specVersion":"v1alpha1","requiredAPIs":[{"api":"cloudscheduler.googleapis.com","reason":"Needed for scheduled functions."}],"extensions":{}}
